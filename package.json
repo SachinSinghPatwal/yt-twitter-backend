@@ -15,8 +15,8 @@
   "author": "Hitesh Choudhary",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "prettier": "^3.0.3"
+    "nodemon": "^3.1.9",
+    "prettier": "^3.5.3"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
