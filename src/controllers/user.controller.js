@@ -6,6 +6,7 @@ import {ApiResponse} from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import {deleteFile} from "../utils/DeleteFileFromCloudinary.js";
+
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -474,6 +475,62 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     );
 });
 
+const removeCoverImage = asyncHandler(async (req, res) => {
+  const coverImage = req.user?.coverImage;
+  if (!coverImage) {
+    throw new ApiError(400, "coverImage not exist");
+  }
+  const coverImageStatus = await deleteFile(coverImage);
+  if (!coverImageStatus) {
+    throw new ApiError(
+      500,
+      "error occur while deleting your file from cloudinary"
+    );
+  }
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        coverImage: "",
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "coverImage removed Successfully"));
+});
+
+const uploadCoverImage = asyncHandler(async (req, res) => {
+  const checkCoverImageExist = req.user.coverImage;
+  if (checkCoverImageExist) {
+    throw new ApiError(400, "user already have the coverImage");
+  }
+  console.log(req.file.path);
+  const coverImageLocalPath = req.file.path;
+  if (!coverImageLocalPath) {
+    throw new ApiError(402, "Multer failed to process file");
+  }
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        coverImage: coverImage?.url,
+      },
+    });
+  } catch (error) {
+    throw new ApiError(
+      505,
+      error?.message || "something went wrong while setting coverImage"
+    );
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "User coverImage Successfully uploaded"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -486,4 +543,6 @@ export {
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory,
+  removeCoverImage,
+  uploadCoverImage,
 };
