@@ -6,7 +6,6 @@ import {ApiResponse} from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import {deleteFile} from "../utils/DeleteFileFromCloudinary.js";
-import path from "path";
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -290,7 +289,11 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is missing");
   }
 
-  const oldAvatarDeleted = await deleteFile(req.user.avatar);
+  const oldUserAvatar = await deleteFile(req.user.avatar);
+
+  if (oldUserAvatar.result === "not found") {
+    throw new ApiError(400, "something went wrong maybe the url is invalid");
+  }
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   if (!avatar?.url) {
@@ -319,7 +322,11 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Cover image file is missing");
   }
 
-  //TODO: delete old image - assignment
+  const oldUserCoverImage = await deleteFile(req.user.coverImage);
+
+  if (oldUserCoverImage.result === "not found") {
+    throw new ApiError(400, "something went wrong maybe the url is invalid");
+  }
 
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 

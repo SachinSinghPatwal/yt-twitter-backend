@@ -8,15 +8,12 @@ cloudinary.config({
 });
 export const deleteFile = async (url) => {
   try {
-    if (!publicId) {
+    if (!url) {
       throw new ApiError(400, "Invalid publicId maybe invalid file type");
     }
     const oldUsersAvatar = path.parse(new URL(url).pathname).name;
-    if (!oldAvatarDeleted) {
-      throw new ApiError(
-        500,
-        "Something went wrong while deleting old avatar file"
-      );
+    if (!oldUsersAvatar) {
+      throw new ApiError(500, "Something went wrong when parsing url");
     }
     const response = await cloudinary.uploader.destroy(oldUsersAvatar, {
       invalidate: true,
@@ -32,7 +29,8 @@ export const deleteFile = async (url) => {
   } catch (error) {
     throw new ApiError(
       501,
-      "something went wrong while updating the file in cloudinary"
+      error?.message ||
+        "something went wrong while updating the file in cloudinary"
     );
   }
 };
