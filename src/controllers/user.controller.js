@@ -20,7 +20,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
   } catch (error) {
     throw new ApiError(
       500,
-      "Something went wrong while generating referesh and access token"
+      "Something went wrong while generating refresh and access token"
     );
   }
 };
@@ -37,7 +37,6 @@ const registerUser = asyncHandler(async (req, res) => {
   // return res
 
   const {fullname, email, username, password} = req.body;
-  //console.log("email: ", email);
 
   if (
     [fullname, email, username, password].some((field) => field?.trim() === "")
@@ -53,25 +52,15 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User with email or username already exists");
   }
 
-  const avatarLocalPath = req.files?.avatar[0]?.path;
+  const avatarObject = req.files.avatar[0];
+  const coverImageObject = req.files.coverImage[0];
 
-  let coverImageLocalPath;
-  if (
-    req.files &&
-    Array.isArray(req.files.coverImage) &&
-    req.files.coverImage.length > 0
-  ) {
-    coverImageLocalPath = req.files.coverImage[0].path;
-  }
-
-  if (!avatarLocalPath) {
+  if (!avatarObject) {
     throw new ApiError(400, "Avatar file is required");
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-
-  console.log("users avatar details :", avatar);
+  const avatar = await uploadOnCloudinary(avatarObject);
+  const coverImage = await uploadOnCloudinary(coverImageObject);
 
   if (!avatar) {
     throw new ApiError(400, "Avatar file is required");
