@@ -52,15 +52,21 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User with email or username already exists");
   }
 
-  const avatarObject = req.files.avatar[0];
-  const coverImageObject = req.files.coverImage[0];
+  const avatarLocalPath = req.files.avatar[0].path;
+  const coverImageLocalPath = req.files.coverImage[0].path;
 
-  if (!avatarObject) {
+  if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required");
   }
 
-  const avatar = await uploadOnCloudinary(avatarObject);
-  const coverImage = await uploadOnCloudinary(coverImageObject);
+  const avatar = await uploadOnCloudinary(
+    avatarLocalPath,
+    "images/usersImage/avatars"
+  );
+  const coverImage = await uploadOnCloudinary(
+    coverImageLocalPath,
+    "images/usersImage/coverImages"
+  );
 
   if (!avatar) {
     throw new ApiError(400, "Avatar file is required");
@@ -68,7 +74,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const user = await User.create({
     fullname,
-    avatar: avatar,
+    avatar,
     coverImage: coverImage || "",
     email,
     password,
@@ -206,8 +212,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       secure: true,
     };
 
-    const {accessToken, newRefreshToken} =
-      await generateAccessAndRefereshTokens(user._id);
+    const {accessToken, newRefreshToken} = await generateAccessAndRefreshTokens(
+      user._id
+    );
 
     return res
       .status(200)
@@ -285,7 +292,10 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "something went wrong maybe the url is invalid");
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const avatar = await uploadOnCloudinary(
+    avatarLocalPath,
+    "images/usersImage/avatars"
+  );
   if (!avatar?.url) {
     throw new ApiError(400, "Error while uploading avatar on cloudinary");
   }
@@ -318,7 +328,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "something went wrong maybe the url is invalid");
   }
 
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  const coverImage = await uploadOnCloudinary(
+    coverImageLocalPath,
+    "images/usersImage/coverImages"
+  );
 
   if (!coverImage.url) {
     throw new ApiError(400, "Error while uploading coverImage on cloudinary");
@@ -502,7 +515,10 @@ const uploadCoverImage = asyncHandler(async (req, res) => {
   if (!coverImageLocalPath) {
     throw new ApiError(402, "Multer failed to process file");
   }
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  const coverImage = await uploadOnCloudinary(
+    coverImageLocalPath,
+    "images/usersImage/coverImages"
+  );
   try {
     await User.findByIdAndUpdate(req.user._id, {
       $set: {

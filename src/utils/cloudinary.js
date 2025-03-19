@@ -1,5 +1,6 @@
 import {v2 as cloudinary} from "cloudinary";
 import fs from "fs";
+import {ApiError} from "./ApiError.js";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -7,23 +8,37 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadOnCloudinary = async (fileObject) => {
+const uploadOnCloudinary = async (
+  localField,
+  destinationPathToCloudinary,
+  resource_type = "image"
+) => {
   try {
-    if (!fileObject.path) return null;
-    const response = await cloudinary.uploader.upload(fileObject.path, {
-      folder:
-        fileObject.fieldname == "avatar"
-          ? "images/usersImages/avatars"
-          : "images/usersImages/coverImages",
-      resource_type: fileObject.mimetype.split("/")[0],
+    if (!(localField || destinationPathToCloudinary)) {
+      throw new ApiError(
+        400,
+        "cant find either localField or destinationPathToCloudinary"
+      );
+    }
+    const response = await cloudinary.uploader.upload(localField, {
+      folder: destinationPathToCloudinary,
+      resource_type,
     });
-    console.log("file is uploaded on cloudinary ", response.url);
-    fs.unlinkSync(fileObject.path);
+    if (!response) {
+      throw new ApiError(
+        500,
+        "something went wrong while uploading asset on cloudinary"
+      );
+    }
+    fs.unlinkSync(localField);
+    if (destinationPathToCloudinary.includes("videos")) return response;
     return response.url;
   } catch (error) {
-    fs.unlinkSync(fileObject.path);
-    console.log("Error while uploading file on cloudinary \n", error.message);
-    return null;
+    fs.unlinkSync(localField);
+    throw new ApiError(
+      500,
+      error?.message || "Error while initiating upload on cloudinary"
+    );
   }
 };
 
