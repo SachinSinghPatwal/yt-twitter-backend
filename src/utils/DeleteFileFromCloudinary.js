@@ -9,16 +9,16 @@ cloudinary.config({
 export const deleteFile = async (url) => {
   try {
     if (!url) {
-      throw new ApiError(400, "Invalid publicId maybe invalid file type");
+      throw new ApiError(400, "Invalid publicId");
     }
-    const oldUsersAvatar = path.parse(new URL(url).pathname).name;
-    if (!oldUsersAvatar) {
+    const oldFilePath = url.split("/").slice(-3).join("/").split(".")[0];
+    if (!oldFilePath) {
       throw new ApiError(500, "Something went wrong when parsing url");
     }
-    const response = await cloudinary.uploader.destroy(oldUsersAvatar, {
+    const response = await cloudinary.uploader.destroy(oldFilePath, {
       invalidate: true,
     });
-    if (!response) {
+    if (!response.result == "ok") {
       throw new ApiError(
         500,
         "Something went wrong while getting url from cloudinary"
