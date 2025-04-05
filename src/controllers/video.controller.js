@@ -56,7 +56,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   });
   return res
     .status(200)
-    .json(new ApiResponse(200, videoForResponse, "data fetched Successfully"));
+    .json(new ApiResponse(200, videoForDb, "data fetched Successfully"));
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
@@ -129,15 +129,15 @@ const updateVideo = asyncHandler(async (req, res) => {
 
 const deleteVideo = asyncHandler(async (req, res) => {
   const {videoId} = req.params;
-  if (videoId) {
-    throw new ApiError(400, "Either Invalid videoId or video doesn't exist");
+  if (!videoId) {
+    throw new ApiError(400, "value is empty");
   }
   const ownerId = await Video.findById(videoId, {owner: 1});
   if (!ownerId.owner.toString() === req.user._id.toString()) {
-    throw new ApiError(410, "you are unAuthorized only the owner can delete");
+    throw new ApiError(410, "you are unAuthorized , only the owner can delete");
   }
-  const videoDeleted = await Video.findByIdAndDelete(videoId);
-  if (videoDeleted) {
+  const videoDeleted = await Video.findById(videoId);
+  if (!videoDeleted) {
     throw new ApiError(
       500,
       "something went wrong while deleting entry from database"

@@ -1,28 +1,28 @@
 import {v2 as cloudinary} from "cloudinary";
 import {ApiError} from "./ApiError.js";
-import path from "path";
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-export const deleteFile = async (url) => {
+export const deleteFile = async (url, destinationPathToCloudinary) => {
   try {
     if (!url) {
       throw new ApiError(400, "Invalid publicId");
     }
-    const oldFilePath = url.split("/").slice(-3).join("/").split(".")[0];
-    if (!oldFilePath) {
+    const publicId = url.split("/").slice(-1)[0].split(".")[0];
+    console.log(publicId, url);
+    if (!publicId) {
       throw new ApiError(500, "Something went wrong when parsing url");
     }
-    const response = await cloudinary.uploader.destroy(oldFilePath, {
-      invalidate: true,
-    });
-    if (!response.result == "ok") {
-      throw new ApiError(
-        500,
-        "Something went wrong while getting url from cloudinary"
-      );
+    const response = await cloudinary.uploader.destroy(
+      `${destinationPathToCloudinary}/${publicId}`,
+      {
+        invalidate: true,
+      }
+    );
+    if (response.result == "not found") {
+      throw new ApiError(500, "file not Found in Cloudinary");
     }
     console.log("old file delete", response);
     return response;

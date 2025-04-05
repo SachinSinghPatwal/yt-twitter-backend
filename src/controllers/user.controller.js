@@ -286,7 +286,10 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is missing");
   }
 
-  const oldUserAvatar = await deleteFile(req.user.avatar);
+  const oldUserAvatar = await deleteFile(
+    req.user.avatar,
+    "images / usersImage / avatars"
+  );
 
   if (oldUserAvatar.result === "not found") {
     throw new ApiError(400, "something went wrong maybe the url is invalid");
@@ -322,7 +325,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Cover image file is missing");
   }
 
-  const oldUserCoverImage = await deleteFile(req.user.coverImage);
+  const oldUserCoverImage = await deleteFile(
+    req.user.coverImage,
+    "images/usersImage/coverImages"
+  );
 
   if (oldUserCoverImage.result === "not found") {
     throw new ApiError(400, "something went wrong maybe the url is invalid");
@@ -386,7 +392,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         subscribersCount: {
           $size: "$subscribers",
         },
-        channelsSubscribedToCount: {
+        channelsSubscribedToTotalCount: {
           $size: "$subscribedTo",
         },
         isSubscribed: {
@@ -482,7 +488,10 @@ const removeCoverImage = asyncHandler(async (req, res) => {
   if (!coverImage) {
     throw new ApiError(400, "coverImage not exist");
   }
-  const coverImageStatus = await deleteFile(coverImage);
+  const coverImageStatus = await deleteFile(
+    coverImage,
+    "images / usersImage / coverImages"
+  );
   if (!coverImageStatus) {
     throw new ApiError(
       500,
