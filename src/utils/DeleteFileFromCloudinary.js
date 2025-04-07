@@ -5,32 +5,28 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-export const deleteFile = async (url, destinationPathToCloudinary) => {
+export const deleteFile = async (
+  url,
+  destinationPathToCloudinary,
+  resource_type = "image"
+) => {
   try {
     if (!url) {
       throw new ApiError(400, "Invalid publicId");
     }
     const publicId = url.split("/").slice(-1)[0].split(".")[0];
-    console.log(publicId, url);
     if (!publicId) {
       throw new ApiError(500, "Something went wrong when parsing url");
     }
     const response = await cloudinary.uploader.destroy(
       `${destinationPathToCloudinary}/${publicId}`,
       {
+        resource_type,
         invalidate: true,
       }
     );
-    if (response.result == "not found") {
-      throw new ApiError(500, "file not Found in Cloudinary");
-    }
-    console.log("old file delete", response);
     return response;
   } catch (error) {
-    throw new ApiError(
-      501,
-      error?.message ||
-        "something went wrong while updating the file in cloudinary"
-    );
+    throw error;
   }
 };

@@ -81,6 +81,9 @@ const updateVideo = asyncHandler(async (req, res) => {
   const {videoId} = req.params;
   //TODO: update video details like title, description, thumbnail
   const {title, description} = req.body;
+  if (!videoId) {
+    throw new ApiError(404, "Empty videoId , Some value is required");
+  }
   if ([title, description].some((each) => each.trim() == "")) {
     throw new ApiError(400, "all fields are required ");
   }
@@ -90,22 +93,32 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "thumbnail file is required");
   }
 
-  const ownerId = await Video.findById(videoId, {owner: 1});
+  const ownerId = await Video.findById(videoId);
+
+  if (!ownerId) {
+    throw new ApiError(404, "invalid videoId");
+  }
+
   if (!ownerId.owner.toString() === req.user._id.toString()) {
-    throw new ApiError(410, "you are unAuthorized only the owner can update");
+    throw new ApiError(
+      410,
+      "you are unAuthorized only the owner can update the thumbnail"
+    );
   }
   const oldThumbnail = await Video.findById(videoId);
 
   if (!oldThumbnail) {
-    throw new ApiError(400, "video Id was not found");
+    throw new ApiError(400, "Invalid video id as no result found matching");
   }
-
-  const deletedThumbnail = await deleteFile(oldThumbnail.thumbnail);
+  const deletedThumbnail = await deleteFile(
+    oldThumbnail.thumbnail,
+    "videos/thumbnails"
+  );
 
   if (deletedThumbnail.result == "not found") {
     throw new ApiError(
-      400,
-      "something went wrong thumbnail is not delete from cloudinary"
+      404,
+      "unable to find and delete your previous Video from cloudinary"
     );
   }
   const thumbnail = await uploadOnCloudinary(
@@ -114,14 +127,19 @@ const updateVideo = asyncHandler(async (req, res) => {
   );
 
   if (!thumbnail) throw new ApiError(400, "error thumbnail was not uploaded");
-  let video;
-  video = await Video.findByIdAndUpdate(videoId, {
-    $set: {
-      title: title,
-      description: description,
-      thumbnail: thumbnail?.url,
+  const video = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      $set: {
+        title: title,
+        description: description,
+        thumbnail: thumbnail?.url,
+      },
     },
-  });
+    {
+      new: true,
+    }
+  );
   return res
     .status(200)
     .json(new ApiResponse(200, video, "details updated Successfully"));
@@ -132,20 +150,33 @@ const deleteVideo = asyncHandler(async (req, res) => {
   if (!videoId) {
     throw new ApiError(400, "value is empty");
   }
-  const ownerId = await Video.findById(videoId, {owner: 1});
+  const ownerId = await Video.findById(videoId);
   if (!ownerId.owner.toString() === req.user._id.toString()) {
     throw new ApiError(410, "you are unAuthorized , only the owner can delete");
   }
-  const videoDeleted = await Video.findById(videoId);
+  const videoDeleted = await Video.findByIdAndDelete(videoId);
   if (!videoDeleted) {
     throw new ApiError(
       500,
       "something went wrong while deleting entry from database"
     );
   }
-  const deleteFromCloudinary = deleteFile(videoDeleted.videoFile);
-  if (!deleteFromCloudinary) {
-    throw new ApiError(500, "VideoFile was not deleted from Cloudinary");
+  const deleteVideoFromCloudinary = deleteFile(
+    videoDeleted.videoFile,
+    "videos/longVideos",
+    "video"
+  );
+  const deleteThumbnailFromCloudinary = deleteFile(
+    videoDeleted.thumbnail,
+    "videos/thumbnails"
+  );
+  if (
+    (deleteVideoFromCloudinary && deleteThumbnailFromCloudinary) == "not found"
+  ) {
+    throw new ApiError(
+      404,
+      "unable to find and delete your Video from cloudinary"
+    );
   }
   return res
     .status(200)

@@ -17,7 +17,7 @@ const uploadOnCloudinary = async (
     if (!(localField || destinationPathToCloudinary)) {
       throw new ApiError(
         400,
-        "cant find either localField or destinationPathToCloudinary"
+        "can't find either localField or destinationPathToCloudinary"
       );
     }
     const response = await cloudinary.uploader.upload(localField, {

@@ -288,19 +288,26 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   const oldUserAvatar = await deleteFile(
     req.user.avatar,
-    "images / usersImage / avatars"
+    "images/usersImage/avatars"
   );
 
   if (oldUserAvatar.result === "not found") {
-    throw new ApiError(400, "something went wrong maybe the url is invalid");
+    throw new ApiError(
+      404,
+      "unable to find and delete your previous Avatar from cloudinary"
+    );
   }
 
   const avatar = await uploadOnCloudinary(
     avatarLocalPath,
     "images/usersImage/avatars"
   );
-  if (!avatar?.url) {
-    throw new ApiError(400, "Error while uploading avatar on cloudinary");
+
+  if (!avatar) {
+    throw new ApiError(
+      400,
+      "unable to get the Avatar url maybe the upload failed"
+    );
   }
 
   const user = await User.findByIdAndUpdate(
@@ -331,7 +338,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   );
 
   if (oldUserCoverImage.result === "not found") {
-    throw new ApiError(400, "something went wrong maybe the url is invalid");
+    throw new ApiError(
+      404,
+      "unable to find and delete your previous Cover Image from Cloudinary"
+    );
   }
 
   const coverImage = await uploadOnCloudinary(
@@ -339,8 +349,11 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     "images/usersImage/coverImages"
   );
 
-  if (!coverImage.url) {
-    throw new ApiError(400, "Error while uploading coverImage on cloudinary");
+  if (!coverImage) {
+    throw new ApiError(
+      400,
+      "unable to get the Cover Image url maybe the upload failed"
+    );
   }
 
   const user = await User.findByIdAndUpdate(
@@ -490,12 +503,12 @@ const removeCoverImage = asyncHandler(async (req, res) => {
   }
   const coverImageStatus = await deleteFile(
     coverImage,
-    "images / usersImage / coverImages"
+    "images/usersImage/coverImages"
   );
   if (!coverImageStatus) {
     throw new ApiError(
       500,
-      "error occur while deleting your file from cloudinary"
+      "unable to find and delete your Cover Image from Cloudinary"
     );
   }
   const user = await User.findByIdAndUpdate(
@@ -519,7 +532,6 @@ const uploadCoverImage = asyncHandler(async (req, res) => {
   if (checkCoverImageExist) {
     throw new ApiError(400, "user already have the coverImage");
   }
-  console.log(req.file.path);
   const coverImageLocalPath = req.file.path;
   if (!coverImageLocalPath) {
     throw new ApiError(402, "Multer failed to process file");
@@ -531,7 +543,7 @@ const uploadCoverImage = asyncHandler(async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user._id, {
       $set: {
-        coverImage: coverImage?.url,
+        coverImage,
       },
     });
   } catch (error) {
