@@ -64,17 +64,44 @@ const getVideoById = asyncHandler(async (req, res) => {
   if (!videoId) {
     throw new ApiError(400, "invalid videoId");
   }
-  const video = await Video.findById(videoId).populate(
-    "owner",
-    "username createdAt avatar username"
-  );
+  const video = await Video.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(videoId),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+      },
+    },
+    {
+      $unwind: "$owner",
+    },
+    {
+      $project: {
+        username: "$owner.username",
+        avatar: "$owner.avatar",
+        videoId: 1,
+        thumbnail: 1,
+        title: 1,
+        duration: 1,
+        duration: 1,
+        isPublished: 1,
+        createdAt: 1,
+      },
+    },
+  ]);
   if (!video) {
     throw new ApiError(500, "video with same id was not found");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, video, "video found successfully"));
+    .json(new ApiResponse(200, video[0], "video found successfully"));
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
