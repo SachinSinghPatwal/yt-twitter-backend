@@ -22,8 +22,8 @@ const app = express()
 ( async () => {
     try {
         await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`)
-        app.on("errror", (error) => {
-            console.log("ERRR: ", error);
+        app.on("error", (error) => {
+            console.log("ERR: ", error);
             throw error
         })
 
