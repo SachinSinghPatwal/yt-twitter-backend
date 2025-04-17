@@ -8,54 +8,80 @@ import {asyncHandler} from "../utils/asyncHandler.js";
 const toggleSubscription = asyncHandler(async (req, res) => {
   // TODO: toggle subscription
   const {channelId: channel} = req.params;
-  // const channelStatus = await User.findById(channel);
-  // let subscription;
-  // let data;
-  // if (!channelStatus) throw new ApiError(400, "channel does not exist.");
-  // const alreadySubscribedStatus = await Subscription.findOne({
-  //   channel,
-  // });
-  // if (alreadySubscribedStatus) {
-  //   console.log("unsubscribe");
-  //   subscription = "unsubscribed";
-  //   data = await Subscription.findOneAndDelete(channel);
-  // } else {
-  //   console.log("subscriber");
-  //   data = await Subscription.create({channel});
-  //   subscription = "subscribed";
-  // }
-  // return res
-  //   .status(200)
-  //   .json(
-  //     new ApiResponse(200, [data, subscription], "subscribed successfully")
-  //   );
+  const {_id: subscriber} = req.user;
+  let message;
+  let subscribing = "";
+  if (channel.toString() === subscriber.toString()) {
+    throw new ApiError(400, "you cannot subscribe yourself");
+  }
+  try {
+    const existingSubscription = await Subscription.findOne({
+      channel,
+      subscriber,
+    });
+    if (existingSubscription) {
+      await Subscription.findByIdAndDelete({_id: existingSubscription._id});
+      message = "unsubscribed";
+    } else {
+      subscribing = await Subscription.create({
+        channel,
+        subscriber,
+      });
+    }
+    return res.status(200).json(new ApiResponse(200, subscribing, message));
+  } catch (error) {
+    res
+      .status(500)
+      .json(new ApiResponse(504, error.message, "Something went wrong"));
+  }
 });
 
-// controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
-  // const {channelId} = req.params;
-  // const subscribers = await Subscription.aggregate([
-  //   {
-  //     $group: {
-  //       _id: "channel",
-  //       subscriberIdCount: {
-  //         sum: 1,
-  //       },
-  //     },
-  //   },
-  // ]);
-  // console.log(subscribers);
-  // if (subscribers.length == 0) {
-  //   throw new ApiError(412, "something went wrong maybe the Id was invalid.");
-  // }
-  // return res
-  //   .status(200)
-  //   .json(new ApiResponse(200, subscribers, "subscriber fetched successfully"));
+  // controller to return subscriber list of a channel
+  const {subscriberId} = req.params;
+  const channelsSubscribing = await Subscription.aggregate([
+    {
+      $match: {
+        channel: new mongoose.Types.ObjectId(subscriberId),
+      },
+    },
+    {
+      $count: "subscribers",
+    },
+  ]);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        channelsSubscribing[0],
+        "subscribers fetched successfully"
+      )
+    );
 });
 
-// controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
-  const {subscriberId} = req.params;
+  // controller to return channel list to which user has subscribed
+  const {channelId} = req.params;
+  const channelsOfUserChannel = await Subscription.aggregate([
+    {
+      $match: {
+        subscriber: new mongoose.Types.ObjectId(channelId),
+      },
+    },
+    {
+      $count: "channelsSubscribing",
+    },
+  ]);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        channelsOfUserChannel[0],
+        "channels subscribing fetched successfully"
+      )
+    );
 });
 
 export {toggleSubscription, getUserChannelSubscribers, getSubscribedChannels};
