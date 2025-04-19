@@ -19,15 +19,15 @@ app.use("*", (req, res) => {
 });
 
 //routes import
-import userRouter from "./routes/user.routes.js";
-import healthCheckRouter from "./routes/healthCheck.routes.js";
-import tweetRouter from "./routes/tweet.routes.js";
-import subscriptionRouter from "./routes/subscription.routes.js";
-import videoRouter from "./routes/video.routes.js";
-import commentRouter from "./routes/comment.routes.js";
-import likeRouter from "./routes/like.routes.js";
-import playlistRouter from "./routes/playlist.routes.js";
-import dashboardRouter from "./routes/dashboard.routes.js";
+import userRouter from "./src/routes/user.routes.js";
+import healthCheckRouter from "./src/routes/healthCheck.routes.js";
+import tweetRouter from "./src/routes/tweet.routes.js";
+import subscriptionRouter from "./src/routes/subscription.routes.js";
+import videoRouter from "./src/routes/video.routes.js";
+import commentRouter from "./src/routes/comment.routes.js";
+import likeRouter from "./src/routes/like.routes.js";
+import playlistRouter from "./src/routes/playlist.routes.js";
+import dashboardRouter from "./src/routes/dashboard.routes.js";
 
 //routes declaration
 app.use("/api/v1/healthCheck", healthCheckRouter);
