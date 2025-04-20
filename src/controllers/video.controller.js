@@ -9,8 +9,17 @@ import {deleteFile} from "../utils/DeleteFileFromCloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   //TODO: get all videos based on query, sort, pagination
-  const {page = 1, limit = 10, sortBy = -1, search = "", sortType} = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    sortBy = -1,
+    search = "",
+    sortType = "views",
+  } = req.query;
   try {
+    if (!page) {
+      throw new ApiError(404, "page number is required to get the videos");
+    }
     const matchStage = {
       isPublished: true,
       title: {$regex: search, $options: "i"},
@@ -63,9 +72,14 @@ const getAllVideos = asyncHandler(async (req, res) => {
         )
       );
   } catch (error) {
-    return res
-      .status(500)
-      .json(new ApiResponse(500, error.message, "Something went wrong"));
+    return res.status(500).json(
+      new ApiResponse(
+        // error.statusCode,
+        404,
+        "Something went wrong",
+        error.message
+      )
+    );
   }
 });
 
