@@ -7,7 +7,73 @@ import {Video} from "../models/video.model.js";
 const getVideoComments = asyncHandler(async (req, res) => {
   //TODO: get all comments for a video
   const {videoId} = req.params;
-  const {page = 1, limit = 10} = req.query;
+  const {page = 1, limit = 10, sortBy = -1, sortType = "createdAt"} = req.query;
+  try {
+    const matchStage = {
+      video: new mongoose.Types.ObjectId(videoId),
+    };
+    const sortedComments = Comment.aggregate([
+      {
+        $match: matchStage,
+      },
+      {
+        $sort: {[sortType]: parseInt(sortBy)},
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+        },
+      },
+      {
+        $unwind: "$owner",
+      },
+      {
+        $project: {
+          username: "$owner.username",
+          avatar: "$owner.avatar",
+          createdAt: 1,
+          updatedAt: 1,
+          content: 1,
+          video: 1,
+        },
+      },
+    ]);
+    const pagination = {
+      limit: parseInt(limit),
+      page: parseInt(page),
+    };
+    const paginatedAndSortedComments = await Comment.aggregatePaginate(
+      sortedComments,
+      pagination
+    );
+    if (!paginatedAndSortedComments.length == 0) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            paginatedAndSortedComments,
+            "No Comments found for this video"
+          )
+        );
+    }
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          paginatedAndSortedComments,
+          "Comments fetched Successfully"
+        )
+      );
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, error.message, "Something went wrong"));
+  }
 });
 
 const addComment = asyncHandler(async (req, res) => {

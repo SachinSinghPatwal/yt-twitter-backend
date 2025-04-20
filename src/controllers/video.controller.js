@@ -8,8 +8,65 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import {deleteFile} from "../utils/DeleteFileFromCloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const {page = 1, limit = 10, query, sortBy, sortType, userId} = req.query;
   //TODO: get all videos based on query, sort, pagination
+  const {page = 1, limit = 10, sortBy = -1, search = "", sortType} = req.query;
+  try {
+    const matchStage = {
+      isPublished: true,
+      title: {$regex: search, $options: "i"},
+    };
+    const sortedVideos = Video.aggregate([
+      {$match: matchStage},
+      {$sort: {[sortType]: parseInt(sortBy)}},
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+        },
+      },
+      {
+        $unwind: "$owner",
+      },
+      {
+        $project: {
+          videoFile: 1,
+          thumbnail: 1,
+          title: 1,
+          duration: 1,
+          views: 1,
+          channel: "$owner.username",
+          channelProfile: "$owner.avatar",
+          createdAt: 1,
+        },
+      },
+    ]);
+    const pagination = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+    };
+    const paginatedAndSortedVideos = await Video.aggregatePaginate(
+      sortedVideos,
+      pagination
+    );
+    if (!paginatedAndSortedVideos) {
+      return res.status(404).json(new ApiResponse(404, [], "No video found"));
+    }
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          paginatedAndSortedVideos,
+          "limited Video are fetched Successfully"
+        )
+      );
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, error.message, "Something went wrong"));
+  }
 });
 
 const publishAVideo = asyncHandler(async (req, res) => {
