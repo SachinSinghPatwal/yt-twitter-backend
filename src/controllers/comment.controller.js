@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, {isValidObjectId} from "mongoose";
 import {Comment} from "../models/comment.model.js";
 import {ApiError} from "../utils/ApiError.js";
 import {ApiResponse} from "../utils/ApiResponse.js";
@@ -80,17 +80,21 @@ const addComment = asyncHandler(async (req, res) => {
   // TODO: add a comment to a video
   const {videoId} = req.params;
   const {content} = req.body;
-  if (!content || !videoId) {
-    throw new ApiError(400, "content or videoId is empty");
+  try {
+    if (!content || !isValidObjectId(videoId)) {
+      throw new ApiError(400, "either content is empty or videoId is invalid");
+    }
+    const comment = await Comment.create({
+      video: videoId,
+      content,
+      owner: req.user._id,
+    });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, comment, "commented created successfully"));
+  } catch (error) {
+    return res.status(400).json(new ApiResponse(400, null, error.message));
   }
-  const comment = await Comment.create({
-    video: videoId,
-    content,
-    owner: req.user._id,
-  });
-  return res
-    .status(200)
-    .json(new ApiResponse(200, comment, "commented created successfully"));
 });
 
 const updateComment = asyncHandler(async (req, res) => {
@@ -98,7 +102,7 @@ const updateComment = asyncHandler(async (req, res) => {
   const {commentId} = req.params;
   const userId = req.user._id;
   const {content} = req.body;
-  if (!commentId) {
+  if (!isValidObjectId(commentId)) {
     throw new ApiError(400, "comment Id is required");
   }
   const comment = await Comment.findByIdAndUpdate(
@@ -118,7 +122,10 @@ const updateComment = asyncHandler(async (req, res) => {
     }
   );
   if (!comment) {
-    throw new ApiError(400, "your are not authorized to update this comment");
+    throw new ApiError(
+      400,
+      "your are not authorized to update this comment or Something went wrong"
+    );
   }
   return res
     .status(200)
