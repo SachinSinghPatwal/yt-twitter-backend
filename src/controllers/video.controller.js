@@ -71,14 +71,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         )
       );
   } catch (error) {
-    return res.status(500).json(
-      new ApiResponse(
-        // error.statusCode,
-        404,
-        "Something went wrong",
-        error.message
-      )
-    );
+    return res.status(404).json(new ApiResponse(404, null, error.message));
   }
 });
 
@@ -126,7 +119,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, videoForDb, "data fetched Successfully"));
   } catch (error) {
-    return res.status(400).json(new ApiResponse(400, null, error.message));
+    return res.status(404).json(new ApiResponse(404, null, error.message));
   }
 });
 
@@ -333,7 +326,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
         new ApiResponse(200, video, "video visibility changed Successfully")
       );
   } catch (error) {
-    return res.status(200).json(new ApiResponse(200, null, error.message));
+    return res.status(404).json(new ApiResponse(404, null, error.message));
   }
 });
 
